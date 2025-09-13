@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+
 permissions:
   contents: write
 
@@ -28,22 +29,15 @@ jobs:
 
       - name: Get version (timestamp)
         id: version
-        run: echo "version=$(date +'%Y.%m.%d.%H%M%S')" >> $GITHUB_OUTPUT
+        run: echo "version=$(date +'%Y.%m.%d.%H%M%S')" >> $GITHUB_ENV
 
       - name: Create Release
-        id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: "Release v${{ steps.version.outputs.version }}"
+          tag_name: v${{ env.version }}
+          name: "Release v${{ env.version }}"
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
-        with:
           files: dist/snake.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
