@@ -59,31 +59,31 @@ jobs:
 
       - name: Generate ASCII Art PNG
         run: |
-          python3 - <<EOF
-          from PIL import Image, ImageDraw, ImageFont
-          ascii_art = '''
-  _____              _        
- / ____|            | |       
-| (___   ___  _ __  | | _____ 
- \\___ \\ / _ \\| '_ \\ | |/ / __|
- ____) | (_) | | | ||   <\\__ \\
-|_____/ \\___/|_| |_||_|\\_\\___/
-                              
-Drag Snake.app to Applications to install!
-          '''.splitlines()
-          W, H = 600, 400
-          img = Image.new("RGB", (W, H), (240, 240, 240))
-          draw = ImageDraw.Draw(img)
-          try:
-              font = ImageFont.truetype("Menlo.ttc", 24)
-          except Exception:
-              font = ImageFont.load_default()
-          y = 60
-          for line in ascii_art:
-              draw.text((40, y), line, font=font, fill=(0,0,0))
-              y += 34
-          img.save("dmg-background.png")
-          EOF
+          python3 <<EOF
+from PIL import Image, ImageDraw, ImageFont
+ascii_art = [
+    "  _____              _        ",
+    " / ____|            | |       ",
+    "| (___   ___  _ __  | | _____ ",
+    " \\___ \\ / _ \\| '_ \\ | |/ / __|",
+    " ____) | (_) | | | ||   <\\__ \\",
+    "|_____/ \\___/|_| |_||_|\\_\\___/",
+    "",
+    "Drag Snake.app to Applications to install!"
+]
+W, H = 600, 400
+img = Image.new("RGB", (W, H), (240, 240, 240))
+draw = ImageDraw.Draw(img)
+try:
+    font = ImageFont.truetype("Menlo.ttc", 24)
+except Exception:
+    font = ImageFont.load_default()
+y = 60
+for line in ascii_art:
+    draw.text((40, y), line, font=font, fill=(0,0,0))
+    y += 34
+img.save("dmg-background.png")
+EOF
 
       - name: Install create-dmg
         run: brew install create-dmg
