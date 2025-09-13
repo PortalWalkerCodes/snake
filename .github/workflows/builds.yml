@@ -51,11 +51,37 @@ jobs:
       - name: Build with PyInstaller
         run: pyinstaller --onefile --windowed --name snake main.py
 
-      - name: Upload Mac Artifact
+      - name: Create .app Bundle
+        run: |
+          mkdir -p Snake.app/Contents/MacOS
+          cp dist/snake Snake.app/Contents/MacOS/snake
+
+      - name: Create DMG Installer
+        run: |
+          brew install create-dmg
+          mkdir -p dmg_source/Applications
+          mv Snake.app dmg_source/
+          # Create a background image with drag instruction
+          echo "Drag Snake.app to Applications to install!" > dmg_source/DRAG_TO_INSTALL.txt
+          create-dmg \
+            --volname "Snake Installer" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon Snake.app 150 200 \
+            --icon Applications 450 200 \
+            --background "" \
+            --custom-background-color 240 240 240 \
+            --app-drop-link Applications \
+            --text "Drag Snake.app to Applications to install!" 200 360 20 \
+            Snake.dmg \
+            dmg_source/
+
+      - name: Upload Mac DMG Artifact
         uses: actions/upload-artifact@v4
         with:
           name: snake-mac
-          path: dist/snake
+          path: Snake.dmg
 
   release:
     runs-on: ubuntu-latest
@@ -67,13 +93,23 @@ jobs:
         with:
           name: snake-windows
 
-      - name: Download Mac Artifact
+      - name: Download Mac DMG Artifact
         uses: actions/download-artifact@v4
         with:
           name: snake-mac
 
-      - name: Set Release Version (1.x)
-        run: echo "VERSION=1.x" >> $GITHUB_ENV
+      - name: Set Release Version (auto-increment)
+        id: version
+        run: |
+          latest_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+$' | head -n 1)
+          if [ -z "$latest_tag" ]; then
+            echo "VERSION=1.0" >> $GITHUB_ENV
+          else
+            major=$(echo $latest_tag | cut -d. -f1 | sed 's/v//')
+            minor=$(echo $latest_tag | cut -d. -f2)
+            next_minor=$((minor + 1))
+            echo "VERSION=${major}.${next_minor}" >> $GITHUB_ENV
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -84,6 +120,6 @@ jobs:
           prerelease: false
           files: |
             snake.exe
-            snake
+            Snake.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
