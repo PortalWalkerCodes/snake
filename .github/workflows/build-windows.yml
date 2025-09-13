@@ -32,7 +32,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: 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
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.version.outputs.version }}
           release_name: "Release v${{ steps.version.outputs.version }}"
