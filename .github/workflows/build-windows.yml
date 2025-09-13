@@ -1,4 +1,4 @@
-name: Build and Release Python App for Windows
+name: Build and Release Python App
 
 on:
   push:
@@ -27,17 +27,63 @@ jobs:
       - name: Build with PyInstaller
         run: pyinstaller --onefile --windowed --name snake main.py
 
-      - name: Get version (timestamp)
-        id: version
-        run: echo "version=$(date +'%Y.%m.%d.%H%M%S')" >> $GITHUB_ENV
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snake-windows
+          path: dist/snake.exe
 
-      - name: Create Release
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller --onefile --windowed --name snake main.py
+
+      - name: Upload Mac Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snake-mac
+          path: dist/snake
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-mac]
+
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: snake-windows
+
+      - name: Download Mac Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: snake-mac
+
+      - name: Set Release Version (1.x)
+        run: echo "VERSION=1.x" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ env.version }}
-          name: "Release v${{ env.version }}"
+          tag_name: v${{ env.VERSION }}
+          name: "Release v${{ env.VERSION }}"
           draft: false
           prerelease: false
-          files: dist/snake.exe
+          files: |
+            snake.exe
+            snake
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
