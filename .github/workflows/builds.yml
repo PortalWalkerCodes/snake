@@ -45,8 +45,9 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
+      - name: Install PyInstaller and Pillow
+        run: |
+          pip install pyinstaller pillow
 
       - name: Build with PyInstaller
         run: pyinstaller --onefile --windowed --name snake main.py
@@ -56,13 +57,41 @@ jobs:
           mkdir -p Snake.app/Contents/MacOS
           cp dist/snake Snake.app/Contents/MacOS/snake
 
+      - name: Generate ASCII Art PNG
+        run: |
+          python3 <<EOF
+          from PIL import Image, ImageDraw, ImageFont
+          ascii_art = [
+              "  _____              _        ",
+              " / ____|            | |       ",
+              "| (___   ___  _ __  | | _____ ",
+              " \\___ \\ / _ \\| '_ \\ | |/ / __|",
+              " ____) | (_) | | | ||   <\\__ \\",
+              "|_____/ \\___/|_| |_||_|\\_\\___/",
+              "",
+              "Drag Snake.app to Applications to install!"
+          ]
+          W, H = 600, 400
+          img = Image.new("RGB", (W, H), (240, 240, 240))
+          draw = ImageDraw.Draw(img)
+          try:
+              font = ImageFont.truetype("Menlo.ttc", 24)
+          except:
+              font = ImageFont.load_default()
+          y = 60
+          for line in ascii_art:
+              draw.text((40, y), line, font=font, fill=(0,0,0))
+              y += 40
+          img.save("dmg-background.png")
+          EOF
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
       - name: Create DMG Installer
         run: |
-          brew install create-dmg
           mkdir -p dmg_source/Applications
           mv Snake.app dmg_source/
-          # Create a background image with drag instruction
-          echo "Drag Snake.app to Applications to install!" > dmg_source/DRAG_TO_INSTALL.txt
           create-dmg \
             --volname "Snake Installer" \
             --window-pos 200 120 \
@@ -70,18 +99,14 @@ jobs:
             --icon-size 100 \
             --icon Snake.app 150 200 \
             --icon Applications 450 200 \
-            --background "" \
-            --custom-background-color 240 240 240 \
-            --app-drop-link Applications \
-            --text "Drag Snake.app to Applications to install!" 200 360 20 \
-            Snake.dmg \
+            --background dmg-background.png \
+            dmg_source/Snake.dmg \
             dmg_source/
-
       - name: Upload Mac DMG Artifact
         uses: actions/upload-artifact@v4
         with:
           name: snake-mac
-          path: Snake.dmg
+          path: dmg_source/Snake.dmg
 
   release:
     runs-on: ubuntu-latest
@@ -120,6 +145,6 @@ jobs:
           prerelease: false
           files: |
             snake.exe
-            Snake.dmg
+            dmg_source/Snake.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
