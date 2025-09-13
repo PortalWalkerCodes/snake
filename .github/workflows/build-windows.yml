@@ -1,13 +1,13 @@
-name: Build Python App for Windows
+name: Build and Release Python App for Windows
 
 on:
   push:
     branches:
-      - main # Or your main branch name
+      - main
 
 jobs:
   build-windows:
-    runs-on: windows-latest # Specifies a Windows runner
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
@@ -16,16 +16,35 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x' # Specify your desired Python version, e.g., '3.9'
+          python-version: '3.x'
 
       - name: Install PyInstaller
         run: pip install pyinstaller
 
       - name: Build with PyInstaller
-        run:     pyinstaller --onefile --windowed --name snake main.py  # Replace 'your_main_script.py' with your application's entry point
+        run: pyinstaller --onefile --windowed --name snake main.py
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Get version (timestamp)
+        id: version
+        run: echo "version=$(date +'%Y.%m.%d.%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: windows-build
-          path: dist/your_main_script.exe # Adjust path based on your PyInstaller output
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: "Release v${{ steps.version.outputs.version }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/snake.exe
+          asset_name: snake.exe
+          asset_content_type: application/octet-stream
