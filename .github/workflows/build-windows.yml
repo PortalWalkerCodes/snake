@@ -1,0 +1,31 @@
+name: Build Python App for Windows
+
+on:
+  push:
+    branches:
+      - main # Or your main branch name
+
+jobs:
+  build-windows:
+    runs-on: windows-latest # Specifies a Windows runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Specify your desired Python version, e.g., '3.9'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run:     pyinstaller --onefile --windowed --name snake main.py  # Replace 'your_main_script.py' with your application's entry point
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: dist/your_main_script.exe # Adjust path based on your PyInstaller output
